@@ -1,1 +1,85 @@
-testing
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lap Time Distribution</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <canvas id="lapTimeChart"></canvas>
+    <script>
+      function formatTime(milliseconds) {
+        const minutes = Math.floor(milliseconds / 60000);
+        const seconds = Math.floor((milliseconds % 60000) / 1000);
+        const millisecondsFormatted = (milliseconds % 1000)
+          .toFixed(0)
+          .padStart(3, "0");
+
+        return `${minutes}:${
+          seconds < 10 ? "0" : ""
+        }${seconds}.${millisecondsFormatted}`;
+      }
+      function plotResults(lapTimes) {
+        const binSize = 200; // 500ms bin size
+        const minTime = lapTimes[0];
+        const maxTime = Math.min(minTime * 1.3, lapTimes[lapTimes.length - 1]);
+        const numBins = Math.ceil((maxTime - minTime) / binSize);
+
+        const bins = Array(numBins).fill(0);
+        lapTimes.forEach((time) => {
+          const binIndex = Math.floor((time - minTime) / binSize);
+          bins[binIndex]++;
+        });
+
+        const labels = Array.from(
+          { length: numBins },
+          (_, i) =>
+            `${formatTime(minTime + i * binSize)}-${formatTime(
+              minTime + (i + 1) * binSize
+            )} ms`
+        );
+
+        const ctx = document.getElementById("lapTimeChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Lap Time Distribution",
+                data: bins,
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Lap Time Ranges (ms)",
+                },
+              },
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      fetch("./data/lap-times.json")
+        .then((response) => response.json())
+        .then((data) => {
+          plotResults(data);
+        });
+    </script>
+  </body>
+</html>
